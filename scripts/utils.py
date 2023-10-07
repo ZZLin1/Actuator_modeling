@@ -84,9 +84,9 @@ def train_actuator_network(xs, ys, actuator_network_path):
     # 网络实例化
     model = build_mlp(in_dim=xs.shape[1], units=32, layers=2, out_dim=ys.shape[1], act='softsign')
 
-    lr = 2.5e-3 #8e-4
+    lr = 1.3e-3 #8e-4
     opt = Adam(model.parameters(), lr=lr, eps=1e-8, weight_decay=0.0)
-    epochs = 500
+    epochs = 4000
     device = 'cuda:0'
     # 训练
     model = model.to(device)
@@ -198,18 +198,19 @@ def train_actuator_network_and_plot_predictions(log_dir_root, log_dir, actuator_
         model = train_actuator_network(xs, ys, actuator_network_path).to("cpu")
 
     tau_preds = model(xs).detach().reshape(num_joint, -1).T  # 转置
-    start_length = 1500
-    plot_length = 6000
+    start_length = 100#1500
+    plot_length = 15000#6000
 
     timesteps = timesteps[start_length:plot_length]
     # torques = torques[step:plot_length + step]
     tau_ests = tau_ests[step+start_length:plot_length + step]
     tau_preds = tau_preds[start_length:plot_length]
-
+    joint_pos_err = joint_position_errors[start_length:plot_length]
     fig, axs = plt.subplots(6, 3, figsize=(14, 6))
     axs = np.array(axs).flatten()
     for i in range(num_joint):
         # axs[i].plot(timesteps, torques[:, i], label="idealized torque")
+        # axs[i].plot(timesteps, joint_pos_err[:, i], label="pos_err")
         axs[i].plot(timesteps, tau_ests[:, i], label="true torque")
         axs[i].plot(timesteps, tau_preds[:, i], linestyle='--', label="actuator model predicted torque")
     plt.legend()

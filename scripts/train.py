@@ -6,9 +6,9 @@ log_dir = "XY"
 load_pretrained_model = True # True:评估 False:训练
 
 if load_pretrained_model:
-    actuator_network_path = "../actuator_nets/XY/unitree_XY_1500.pt"
+    actuator_network_path = "../actuator_nets/XY/unitree_XY_4000.pt"
 else:
-    actuator_network_path = "../actuator_nets/XY/unitree_XY.pt"
+    actuator_network_path = "../actuator_nets/XY/unitree_XY_4000.pt"
 
 log_dirs = glob(f"{log_dir_root}{log_dir}/", recursive=True)
 
