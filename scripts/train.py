@@ -1,14 +1,15 @@
 from utils import train_actuator_network_and_plot_predictions
 from glob import glob
 
-log_dir_root = "../logs/"
-log_dir = "XY"
+log_dir_root = "logs/"
+log_dir = "A1"
 load_pretrained_model = True # True:评估 False:训练
+resume = True #训练时有效，继续训练 load_pretrained_model
 
 if load_pretrained_model:
-    actuator_network_path = "../actuator_nets/XY/unitree_XY_4000.pt"
+    actuator_network_path = "actuator_nets/A1/unitree_A1.pt"
 else:
-    actuator_network_path = "../actuator_nets/XY/unitree_XY_4000.pt"
+    actuator_network_path = "actuator_nets/A1/unitree_A1.pt"
 
 log_dirs = glob(f"{log_dir_root}{log_dir}/", recursive=True)
 
@@ -18,7 +19,7 @@ for log_dir in log_dirs:
     try:
         train_actuator_network_and_plot_predictions(log_dir[:11], log_dir[11:],
                                                     actuator_network_path=actuator_network_path,
-                                                    load_pretrained_model=load_pretrained_model)
+                                                    load_pretrained_model=load_pretrained_model,resume=resume)
     except FileNotFoundError:
         print(f"Couldn't find log.pkl in {log_dir}")
     except EOFError:

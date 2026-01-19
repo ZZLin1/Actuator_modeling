@@ -71,7 +71,7 @@ def build_mlp(in_dim, units, layers, out_dim, act='relu', layer_norm=False, act_
 
 
 # 训练拟合电机模型
-def train_actuator_network(xs, ys, actuator_network_path):
+def train_actuator_network(xs, ys, actuator_network_path,resume):
     print(xs.shape, ys.shape)
     num_data = xs.shape[0]  # 数据总量
     num_train = num_data // 5 * 4  # 训练集数量
@@ -82,11 +82,14 @@ def train_actuator_network(xs, ys, actuator_network_path):
     train_loader = DataLoader(train_set, batch_size=128, shuffle=True)
     test_loader = DataLoader(val_set, batch_size=128, shuffle=True)
     # 网络实例化
-    model = build_mlp(in_dim=xs.shape[1], units=32, layers=2, out_dim=ys.shape[1], act='softsign')
+    if resume:
+        model = torch.jit.load(actuator_network_path)
+    else:
+        model = build_mlp(in_dim=xs.shape[1], units=32, layers=2, out_dim=ys.shape[1], act='softsign')
 
-    lr = 1.3e-3 #8e-4
+    lr = 8.0e-4
     opt = Adam(model.parameters(), lr=lr, eps=1e-8, weight_decay=0.0)
-    epochs = 4000
+    epochs = 5000
     device = 'cuda:0'
     # 训练
     model = model.to(device)
@@ -132,7 +135,7 @@ def train_actuator_network(xs, ys, actuator_network_path):
 
 # 训练/评估/绘图
 def train_actuator_network_and_plot_predictions(log_dir_root, log_dir, actuator_network_path,
-                                                load_pretrained_model=False):
+                                                load_pretrained_model=False,resume = False):
     # 数据集路径
     log_path = log_dir_root + log_dir + "log.pkl"
     print(log_path)
@@ -195,22 +198,28 @@ def train_actuator_network_and_plot_predictions(log_dir_root, log_dir, actuator_
     if load_pretrained_model:
         model = torch.jit.load(actuator_network_path).to('cpu')
     else:
-        model = train_actuator_network(xs, ys, actuator_network_path).to("cpu")
+        model = train_actuator_network(xs, ys, actuator_network_path,resume).to("cpu")
 
     tau_preds = model(xs).detach().reshape(num_joint, -1).T  # 转置
-    start_length = 100#1500
-    plot_length = 15000#6000
+    start_length = 450#1500
+    plot_length = 550
 
     timesteps = timesteps[start_length:plot_length]
     # torques = torques[step:plot_length + step]
     tau_ests = tau_ests[step+start_length:plot_length + step]
     tau_preds = tau_preds[start_length:plot_length]
     joint_pos_err = joint_position_errors[start_length:plot_length]
+    joint_pos = joint_positions[start_length:plot_length]
+    joint_pos_target = joint_position_targets[start_length:plot_length]
+    joint_vel = joint_velocities[start_length:plot_length]
     fig, axs = plt.subplots(6, 3, figsize=(14, 6))
     axs = np.array(axs).flatten()
     for i in range(num_joint):
         # axs[i].plot(timesteps, torques[:, i], label="idealized torque")
-        # axs[i].plot(timesteps, joint_pos_err[:, i], label="pos_err")
+        # axs[i].plot(timesteps, joint_pos_err[:, i], label="PD torque")
+        # axs[i].plot(timesteps, joint_pos[:, i], label="pos")
+        # axs[i].plot(timesteps, joint_pos_target[:, i], label="pos_target")
+        # axs[i].plot(timesteps, joint_vel[:, i], label="vel")
         axs[i].plot(timesteps, tau_ests[:, i], label="true torque")
         axs[i].plot(timesteps, tau_preds[:, i], linestyle='--', label="actuator model predicted torque")
     plt.legend()
